@@ -1,0 +1,349 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title></title>
+<style id="system" type="text/css">*{margin:0;padding:0;}body {	font:13.34px helvetica,arial,freesans,clean,sans-serif;	color:black;	line-height:1.4em;	background-color: #F8F8F8;	padding: 0.7em;}p {	margin:1em 0;	line-height:1.5em;}table {	font-size:inherit;	font:100%;	margin:1em;}table th{border-bottom:1px solid #bbb;padding:.2em 1em;}table td{border-bottom:1px solid #ddd;padding:.2em 1em;}input[type=text],input[type=password],input[type=image],textarea{font:99% helvetica,arial,freesans,sans-serif;}select,option{padding:0 .25em;}optgroup{margin-top:.5em;}pre,code{font:12px Monaco,"Courier New","DejaVu Sans Mono","Bitstream Vera Sans Mono",monospace;}pre {	margin:1em 0;	font-size:12px;	background-color:#eee;	border:1px solid #ddd;	padding:5px;	line-height:1.5em;	color:#444;	overflow:auto;	-webkit-box-shadow:rgba(0,0,0,0.07) 0 1px 2px inset;	-webkit-border-radius:3px;	-moz-border-radius:3px;border-radius:3px;white-space: pre-wrap;word-wrap:break-word;}pre code {	padding:0;	font-size:12px;	background-color:#eee;	border:none;}code {	font-size:12px;	background-color:#f8f8ff;	color:#444;	padding:0 .2em;	border:1px solid #dedede;}img{border:0;max-width:100%;}abbr{border-bottom:none;}a{color:#4183c4;text-decoration:none;}a:hover{text-decoration:underline;}a code,a:link code,a:visited code{color:#4183c4;}h2,h3{margin:1em 0;}h1,h2,h3,h4,h5,h6{border:0;}h1{font-size:170%;border-top:4px solid #aaa;padding-top:.5em;margin-top:1.5em;}h1:first-child{margin-top:0;padding-top:.25em;border-top:none;}h2{font-size:150%;margin-top:1.5em;border-top:4px solid #e0e0e0;padding-top:.5em;}h3{margin-top:1em;}hr{border:1px solid #ddd;}ul{margin:1em 0 1em 2em;}ol{margin:1em 0 1em 2em;}ul li,ol li{margin-top:.5em;margin-bottom:.5em;}ul ul,ul ol,ol ol,ol ul{margin-top:0;margin-bottom:0;}blockquote{margin:1em 0;border-left:5px solid #ddd;padding-left:.6em;color:#555;}dt{font-weight:bold;margin-left:1em;}dd{margin-left:2em;margin-bottom:1em;}@media screen and (min-width: 768px) {    body {        width: 748px;        margin:10px auto;    }}</style><style id="custom" type="text/css"></style></head>
+<body marginheight="0"><h1>简介</h1>
+<p>Fluentd 和 Elasticsearch都可以做分布式日志，fluentd需要一个数据库进行收集再读取，负载就比较高，Elasticsearch直接将所有的数据收集，再展通过kibana示出来，负载低，速度快。elk还加入了beats插件，不但可以分析日志还可以分析流量、监控服务等。
+
+</p>
+<ul>
+<li><p>Elasticsearch是个开源分布式搜索引擎，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，restful风格接口，多数据源，自动搜索负载等。</p>
+</li>
+<li><p>Logstash是一个开源的用于收集,分析和存储日志的工具。</p>
+</li>
+<li><p>Kibana 也是一个开源和免费的工具，Kibana可以为 Logstash 和 ElasticSearch 提供的日志分析友好的 Web 界面，可以汇总、分析和搜索重要数据日志。</p>
+</li>
+<li><p>Beats是elasticsearch公司开源的一款采集系统监控数据的代理agent，是在被监控服务器上以客户端形式运行的数据收集器的统称，可以直接把数据发送给Elasticsearch或者通过Logstash发送给Elasticsearch，然后进行后续的数据分析活动。</p>
+</li>
+</ul>
+<blockquote>
+<p>Beats主要有下面三个组件:
+
+</p>
+</blockquote>
+<ol>
+<li><p>Packetbeat：是一个网络数据包分析器，用于监控、收集网络流量信息，Packetbeat嗅探服务器之间的流量，解析应用层协议，并关联到消息的处理，其支 持ICMP (v4 and v6)、DNS、HTTP、Mysql、PostgreSQL、Redis、MongoDB、Memcache等协议；</p>
+</li>
+<li><p>Filebeat：用于监控、收集服务器日志文件，其已取代 logstash forwarder；</p>
+</li>
+<li><p>Metricbeat：可定期获取外部系统的监控指标信息，其可以监控、收集Apache、HAProxy、MongoDB、MySQL、Nginx、PostgreSQL、Redis、System、Zookeeper等服务</p>
+</li>
+</ol>
+<h1>软件环境</h1>
+<p>本文主要是分析日志的，所以只需装以下服务，如果有需要监控，再装其他beats插件，方法和装filebeat一样。
+
+</p>
+<ul>
+<li>服务器环境：centos7.3   </li>
+<li>JDK:1.8 </li>
+<li>Elasticsearch：5.4.*</li>
+<li>Logstash：5.4 *</li>
+<li>Kibana：5.4.*</li>
+<li>Filebeat</li>
+</ul>
+<h2>原理图</h2>
+<p>具体看ELK体系文档。
+
+</p>
+<p><img src="image/analysis_log_2.jpg" alt="Alt text">
+
+</p>
+<h2>端口介绍</h2>
+<p>为了保证服务能够正常运行，要在云平台上开放以下端口。
+
+</p>
+<h3>Elasticsearch</h3>
+<blockquote>
+<p>   Elasticsearch有两个端口
+
+</p>
+</blockquote>
+<p>9200：收集数据，数据来源有logstash、beats插件等。
+9300：发送数据，将数据发送给kibana、grafana等。
+
+</p>
+<h3>Kibana</h3>
+<blockquote>
+<p>   Kibana有一个端口
+
+</p>
+</blockquote>
+<p>5601：web页面访问端口。
+
+</p>
+<h3>Logstash</h3>
+<blockquote>
+<p>   logstash有两个端口
+
+</p>
+</blockquote>
+<p>5044：收集数据，数据来源是beats。
+9600：数据访问API接口。
+
+</p>
+<h1>验证服务器环境</h1>
+<ul>
+<li><p>server：192.168.254.137</p>
+<p>需要装的服务有：JDK:1.8 ，Elasticsearch：5.4.<em>，Logstash：5.4 </em>，Kibana：5.4.*，Filebeat</p>
+</li>
+<li><p>note1：192.168.254.135</p>
+<p>需要装的服务有：Filebeat</p>
+</li>
+<li><p>note2：192.168.254.136</p>
+<p>需要装的服务有：Filebeat</p>
+</li>
+</ul>
+<h1>环境安装</h1>
+<h2>jdk安装</h2>
+<p>下载jdk-8u121-linux-x64.rpm包，下载地址：
+
+</p>
+<p><a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html"></a><a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html">http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html</a>
+
+
+</p>
+<pre><code>rpm -ivh jdk-8u121-linux-x64.rpm</code></pre>
+<h2>配置yum源，安装elk的所有服务</h2>
+<blockquote>
+<p>   取得elk的认证
+
+</p>
+</blockquote>
+<pre><code>rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch     </code></pre>
+<blockquote>
+<p>   配置yum源
+
+</p>
+</blockquote>
+<pre><code>vim /etc/yum.repos.d/elasticsearch.repo   </code></pre>
+<pre>    
+[elasticsearch-5.x]
+name=Elasticsearch repository for 5.x packages
+baseurl=https://artifacts.elastic.co/packages/5.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+ </pre>
+
+
+<h3>Elasticsearch</h3>
+<h4>安装</h4>
+<pre><code>yum install  -y  elasticsearch</code></pre>
+<h4>配置</h4>
+<p>elasticsearch单个服务可以做出成集群，可能用不到,下面有标注。
+
+</p>
+<pre><code>vim    /etc/elasticsearch/elasticsearch.yml</code></pre>
+<pre><code>...
+# ---------------------------------- Cluster -----------------------------------
+#
+# Use a descriptive name for your cluster:
+#
+cluster.name: tomcat_001                    ## 集群需要，集群的名字
+#
+# ------------------------------------ Node ------------------------------------
+#
+# Use a descriptive name for the node:
+#
+node.name: linux-node1                        ##集群需要 节点名字
+#
+# Add custom attributes to the node:
+#
+#node.attr.rack: r1
+#
+# ----------------------------------- Paths ------------------------------------
+#
+# Path to directory where to store the data (separate multiple locations by comma):
+#
+path.data: /data/es-data/                ##为了防止文件过大，把收集的数据放到其他地方
+#
+# Path to log files:
+#
+path.logs: /data/log/elasticsearch/        ##日志文件
+#
+# ----------------------------------- Memory -----------------------------------
+#
+# Lock the memory on startup:
+#
+#bootstrap.memory_lock: true        ##是否可以使用swap内存
+
+# ---------------------------------- Network -----------------------------------
+#
+# Set the bind address to a specific IP (IPv4 or IPv6):
+#
+network.host: 0.0.0.0                    ##对外侦听的ip
+#
+# Set a custom port for HTTP:
+#
+http.port: 9200                                ##对外侦听的端口
+#
+# For more information, consult the network module documentation.
+#
+# --------------------------------- Discovery ----------------------------------
+#
+# Pass an initial list of hosts to perform discovery when new node is started:
+# The default list of hosts is ["127.0.0.1", "[::1]"]
+#
+#discovery.zen.ping.unicast.hosts: ["192.168.254.137", "192.168.254.135"]        ##集群需要，发现集群的ip集合
+#
+# Prevent the "split brain" by configuring the majority of nodes (total number of master-eligible nodes / 2 + 1):
+#
+#discovery.zen.minimum_master_nodes: 2    ##集群需要，至少有两个及以上的节点才能有master
+
+...</code></pre>
+<h3>Logstash</h3>
+<h4>安装</h4>
+<pre><code>yum install -y logstash</code></pre>
+<h4>配置</h4>
+<p>logstash的配置比较复杂，这种方式是通用的，满足一般分析日志需求，具体的看使用篇。
+
+</p>
+<pre><code>   vim /etc/logstash/conf.d/logstash.conf</code></pre>
+<pre><code>input {
+    beats {
+        port =&gt; "5044"
+    }
+}
+ filter {
+    grok {
+        match =&gt; { "message" =&gt; "%{COMBINEDAPACHELOG}"}
+    }
+}
+output {
+    elasticsearch {
+        hosts =&gt; [ "192.168.254.137:9200" ]
+    }
+}</code></pre>
+<p>注释：
+</p>
+<blockquote>
+<p>   input  数据来源
+
+</p>
+</blockquote>
+<p>port =&gt; "5044"：对外侦听， filebeat数据通过这个端口发送给logstash。
+
+</p>
+<blockquote>
+<p>   filter    数据处理
+
+</p>
+</blockquote>
+<p>"message" =&gt; "%{COMBINEDAPACHELOG}"：把日志数据全部拿出来 ，没有截取   
+
+</p>
+<blockquote>
+<p>   output    数据输出
+
+</p>
+</blockquote>
+<p>hosts =&gt; [ "192.168.254.137:9200" ]：把收集到的数据发送给server。
+
+
+</p>
+<h3>Kibana</h3>
+<h4>安装</h4>
+<pre><code>yum install -y kibana</code></pre>
+<h4>配置</h4>
+<p>只需要修改以下侦听地址
+
+</p>
+<pre><code>vim /etc/kibana/kibana.yml </code></pre>
+<pre><code>...
+
+server.host: "192.168.254.137"
+
+...</code></pre>
+<h3>filebeat</h3>
+<h4>安装</h4>
+<pre><code>yum install -y filebeat</code></pre>
+<h4>配置</h4>
+<p>filebeat主要作用就是做日志采集的，采集的数据可以发给elasticsearch和logstash。
+
+</p>
+<p>发给elasticsearch是原始数据，没有经过任何处理。
+
+</p>
+<p>发给logstash，logstash再发给elasticsearch,经过了处理。
+
+</p>
+<p>实际上下情况只需要发送一个就够了，只需要发送给logstash。本文发送两个是为了对比logstash处理日志的情况。
+
+</p>
+<p>修改日志位置，对服务器elasticsearch和logstash的ip和端口
+
+</p>
+<pre><code>vim /etc/filebeat/filebeat.yml</code></pre>
+<pre><code>...
+filebeat.prospectors:
+- input_type: log
+ paths:
+  - /data/tomcat/logs/*.log    
+#==================== Outputs =====================
+#------------- Elasticsearch output ---------------
+output.elasticsearch:
+ # Array of hosts to connect to.
+  hosts: ["192.168.254.137:9200"]
+#---------------- Logstash output -----------------
+output.logstash:
+ # The Logstash hosts
+ hosts: ["192.168.254.137:5044"] 
+ ...</code></pre>
+<h1>服务启动与关闭</h1>
+<h2>启动</h2>
+<pre><code>systemctl start elasticsearch
+systemctl start logstash
+systemctl start kibana
+systemctl start filebeat</code></pre>
+<h2>开启启动</h2>
+<pre><code>systemctl enable elasticsearch
+systemctl enable logstash
+systemctl enable kibana
+systemctl enable filebeat</code></pre>
+<h2>查看状态</h2>
+<pre><code>systemctl status elasticsearch
+systemctl status logstash
+systemctl status kibana
+systemctl status filebeat
+
+如果全部是active (running)，就说明是安装成功了。</code></pre>
+<h2>停止</h2>
+<pre><code>systemctl stop elasticsearch
+systemctl stop logstash
+systemctl stop kibana
+systemctl stop filebeat</code></pre>
+<h1>ELK基础配置：</h1>
+<ol>
+<li><p>打开<a href="http://192.168.254.137:5601">http://192.168.254.137:5601</a></p>
+</li>
+<li><p>创建索</p>
+</li>
+</ol>
+<blockquote>
+<p>  创建filebeat的索引
+
+</p>
+</blockquote>
+<p>只需输入filebeat-* 
+
+</p>
+<p><img src="image/analysis_log_1.jpg" alt="Alt text">
+
+</p>
+<blockquote>
+<p>   创建logstash的索引
+
+</p>
+</blockquote>
+<p>紧接上一步，然后点击“+”,再点击“Crete”按钮创建logstash索引  。
+
+</p>
+<p><img src="image/analysis_log_8.jpg" alt="Alt text">
+
+</p>
+<p><img src="image/analysis_log_9.jpg" alt="Alt text">
+
+</p>
+</body></html>

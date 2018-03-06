@@ -1,0 +1,67 @@
+elasticsearch-plugin install x-pack   安装x-pack
+
+bin/kibana-plugin install x-pack
+
+
+bin/logstash-plugin install x-pack
+
+
+启动服务
+
+
+curl -XPUT -u elastic 'localhost:9200/_xpack/security/user/elastic/_password' -H "Content-Type: application/json" -d '{ "password" : "123456"}'
+
+默认密码是“changeme”
+
+
+curl -XPUT -u elastic 'localhost:9200/_xpack/security/user/kibana/_password' -H "Content-Type: application/json" -d '{ "password" : "123456"}'
+
+密码是123456
+
+curl -XPUT -u elastic 'localhost:9200/_xpack/security/user/logstash_system/_password' -H "Content-Type: application/json" -d '{   "password" : "logstashpassword" }'
+
+
+
+创建角色
+
+
+curl -XPOST -u elastic 'localhost:9200/_xpack/security/role/events_admin' -H "Content-Type: application/json" -d '{
+  "indices" : [
+    {
+      "names" : [ "events*" ],
+      "privileges" : [ "all" ]
+    },
+    {
+      "names" : [ ".kibana*" ],
+      "privileges" : [ "manage", "read", "index" ]
+    }
+  ]
+}'
+
+
+
+curl -XPOST -u elastic 'localhost:9200/_xpack/security/user/johndoe' -H "Content-Type: application/json" -d '{
+  "password" : "test123456",
+  "full_name" : "test1",
+  "email" : "test1@anony.mous",
+  "roles" : [ "test123456" ]
+}'
+
+
+
+
+创建认证key
+到/usr/share/elasticsearch/bin/x-pack
+
+./syskeygen
+
+
+会创建/etc/elasticsearch/x-pack/system_key
+
+如果有es集群,需要把key复制到其他es服务器相应的位置，并加上xpack.security.audit.enabled：true到es配置文件
+
+
+
+
+
+

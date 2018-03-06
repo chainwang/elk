@@ -1,0 +1,166 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title></title>
+<style id="system" type="text/css">*{margin:0;padding:0;}body {	font:13.34px helvetica,arial,freesans,clean,sans-serif;	color:black;	line-height:1.4em;	background-color: #F8F8F8;	padding: 0.7em;}p {	margin:1em 0;	line-height:1.5em;}table {	font-size:inherit;	font:100%;	margin:1em;}table th{border-bottom:1px solid #bbb;padding:.2em 1em;}table td{border-bottom:1px solid #ddd;padding:.2em 1em;}input[type=text],input[type=password],input[type=image],textarea{font:99% helvetica,arial,freesans,sans-serif;}select,option{padding:0 .25em;}optgroup{margin-top:.5em;}pre,code{font:12px Monaco,"Courier New","DejaVu Sans Mono","Bitstream Vera Sans Mono",monospace;}pre {	margin:1em 0;	font-size:12px;	background-color:#eee;	border:1px solid #ddd;	padding:5px;	line-height:1.5em;	color:#444;	overflow:auto;	-webkit-box-shadow:rgba(0,0,0,0.07) 0 1px 2px inset;	-webkit-border-radius:3px;	-moz-border-radius:3px;border-radius:3px;white-space: pre-wrap;word-wrap:break-word;}pre code {	padding:0;	font-size:12px;	background-color:#eee;	border:none;}code {	font-size:12px;	background-color:#f8f8ff;	color:#444;	padding:0 .2em;	border:1px solid #dedede;}img{border:0;max-width:100%;}abbr{border-bottom:none;}a{color:#4183c4;text-decoration:none;}a:hover{text-decoration:underline;}a code,a:link code,a:visited code{color:#4183c4;}h2,h3{margin:1em 0;}h1,h2,h3,h4,h5,h6{border:0;}h1{font-size:170%;border-top:4px solid #aaa;padding-top:.5em;margin-top:1.5em;}h1:first-child{margin-top:0;padding-top:.25em;border-top:none;}h2{font-size:150%;margin-top:1.5em;border-top:4px solid #e0e0e0;padding-top:.5em;}h3{margin-top:1em;}hr{border:1px solid #ddd;}ul{margin:1em 0 1em 2em;}ol{margin:1em 0 1em 2em;}ul li,ol li{margin-top:.5em;margin-bottom:.5em;}ul ul,ul ol,ol ol,ol ul{margin-top:0;margin-bottom:0;}blockquote{margin:1em 0;border-left:5px solid #ddd;padding-left:.6em;color:#555;}dt{font-weight:bold;margin-left:1em;}dd{margin-left:2em;margin-bottom:1em;}@media screen and (min-width: 768px) {    body {        width: 748px;        margin:10px auto;    }}</style><style id="custom" type="text/css"></style></head>
+<body marginheight="0"><h1>简介</h1>
+<p>为解决elk用户权限捆绑和服务监控的问题，我们可以安装x-pack插件，该插件能够很好的解决这两个问题。
+
+</p>
+<h1>安装</h1>
+<blockquote>
+<p>   安装x-pack
+
+</p>
+</blockquote>
+<p>Elasticsearh安装x-pack（如果是集群，每台机器上都要安装）
+
+</p>
+<pre><code>cd /usr/share/elasticsearch/
+bin/elasticsearch-plugin install x-pack</code></pre>
+<p>再按两次“y”
+
+</p>
+<p>Kibana安装x-pack
+
+</p>
+<pre><code>cd /usr/share/kibana/
+bin/kibana-plugin install x-pack</code></pre>
+<p>logstash安装x-pack
+
+</p>
+<pre><code>cd /usr/share/logstash/
+bin/logstash-plugin  install x-pack</code></pre>
+<h1>使用</h1>
+<p>x-pack安装好后启动后就可以访问了，有一个超级用“elastic”,密码是“changeme”,有所有权限。
+
+</p>
+<p><img src="image/kibana_1.jpg" alt="kibana">
+
+</p>
+<h2>权限使用</h2>
+<p>可以在web页面上添加用户和权限组，也可以用API。
+
+</p>
+<p>名词解释：
+
+</p>
+<p>user：创建的用户名字。
+role：用户被分到哪个role组就有哪些权限，权限就是通过role进行控制
+
+
+
+
+</p>
+<h3>在web页面添加修改用户</h3>
+<p><img src="image/kibana_2.jpg" alt="kibana">
+
+</p>
+<p><img src="image/kibana_3.jpg" alt="kibana">
+
+</p>
+<p>系统自带了很多权限组，可以点击查看自带的组有哪些权限。
+<img src="image/kibana_4.jpg" alt="kibana">
+
+
+</p>
+<p>如果我们需要新加一个用户，可以把他放到 “superuser”组。
+
+
+</p>
+<h3>API添加修改用户</h3>
+<blockquote>
+<p>   修改超级用户的密码
+
+
+</p>
+</blockquote>
+<p>curl -XPUT -u elastic 'localhost:9200/_xpack/security/user/elastic/_password' -H "Content-Type: application/json" -d '{ "password" : "123456"}'
+
+</p>
+<blockquote>
+<p>   修改普通用户密码
+
+</p>
+</blockquote>
+<p>curl -XPUT -u elastic 'localhost:9200/_xpack/security/user/kibana/_password' -H "Content-Type: application/json" -d '{ "password" : "123456"}'
+
+</p>
+<blockquote>
+<p>   创建role
+
+</p>
+</blockquote>
+<p>curl -XPOST -u elastic 'localhost:9200/_xpack/security/role/events_admin' -H "Content-Type: application/json" -d '{
+  "indices" : [
+    {
+      "names" : [ "events<em>" ],
+      "privileges" : [ "all" ]
+    },
+    {
+      "names" : [ ".kibana</em>" ],
+      "privileges" : [ "manage", "read", "index" ]
+    }
+  ]
+}'
+
+
+</p>
+<blockquote>
+<p>   创建user
+
+</p>
+</blockquote>
+<p>curl -XPOST -u elastic 'localhost:9200/_xpack/security/user/johndoe' -H "Content-Type: application/json" -d '{
+  "password" : "userpassword",
+  "full_name" : "John Doe",
+  "email" : "john.doe@anony.mous",
+  "roles" : [ "events_admin" ]
+}'
+
+</p>
+<h2>监控</h2>
+<h3>查看</h3>
+<p>当我们安装好x-pack之后，x-pack插件就会定时采集监控数据到web页面，并提供了可视化图片。
+
+</p>
+<p>可以直观的看到数据，缺点就是不能发邮件报警。
+
+</p>
+<p><img src="image/kibana_4.jpg" alt="kibana">
+
+</p>
+<p><img src="image/kibana_6.jpg" alt="kibana">
+
+
+</p>
+<h2>将x-pack升级为永久免费</h2>
+<p><img src="image/kibana_7.jpg" alt="kibana">
+
+</p>
+<p><img src="image/kibana_8.jpg" alt="kibana">
+
+</p>
+<p><img src="image/kibana_9.jpg" alt="kibana">
+
+</p>
+<p><img src="image/kibana_10.jpg" alt="kibana">
+
+</p>
+<p><img src="image/kibana_11.jpg" alt="kibana">
+
+</p>
+<p>再更新证书
+
+</p>
+<p>curl -XPUT -u elastic '<a href="http://localhost:9200/_xpack/license">http://localhost:9200/_xpack/license</a>' -H "Content-Type: application/json" -d @casent-cheng-0d5aef40-c59f-4575-a7a1-7fcda571cb29-v5.json
+
+</p>
+<p>curl -XPUT -u elastic '<a href="http://localhost:9200/_xpack/license?acknowledge=true">http://localhost:9200/_xpack/license?acknowledge=true</a>' -H "Content-Type: application/json" -d @casent-cheng-0d5aef40-c59f-4575-a7a1-7fcda571cb29-v5.json
+
+</p>
+<p>每年要更新一次。
+
+
+</p>
+<p>Edit By <a href="http://mahua.jser.me">MaHua</a></p>
+</body></html>

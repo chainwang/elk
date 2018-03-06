@@ -1,0 +1,290 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title></title>
+<style id="system" type="text/css">*{margin:0;padding:0;}body {	font:13.34px helvetica,arial,freesans,clean,sans-serif;	color:black;	line-height:1.4em;	background-color: #F8F8F8;	padding: 0.7em;}p {	margin:1em 0;	line-height:1.5em;}table {	font-size:inherit;	font:100%;	margin:1em;}table th{border-bottom:1px solid #bbb;padding:.2em 1em;}table td{border-bottom:1px solid #ddd;padding:.2em 1em;}input[type=text],input[type=password],input[type=image],textarea{font:99% helvetica,arial,freesans,sans-serif;}select,option{padding:0 .25em;}optgroup{margin-top:.5em;}pre,code{font:12px Monaco,"Courier New","DejaVu Sans Mono","Bitstream Vera Sans Mono",monospace;}pre {	margin:1em 0;	font-size:12px;	background-color:#eee;	border:1px solid #ddd;	padding:5px;	line-height:1.5em;	color:#444;	overflow:auto;	-webkit-box-shadow:rgba(0,0,0,0.07) 0 1px 2px inset;	-webkit-border-radius:3px;	-moz-border-radius:3px;border-radius:3px;white-space: pre-wrap;word-wrap:break-word;}pre code {	padding:0;	font-size:12px;	background-color:#eee;	border:none;}code {	font-size:12px;	background-color:#f8f8ff;	color:#444;	padding:0 .2em;	border:1px solid #dedede;}img{border:0;max-width:100%;}abbr{border-bottom:none;}a{color:#4183c4;text-decoration:none;}a:hover{text-decoration:underline;}a code,a:link code,a:visited code{color:#4183c4;}h2,h3{margin:1em 0;}h1,h2,h3,h4,h5,h6{border:0;}h1{font-size:170%;border-top:4px solid #aaa;padding-top:.5em;margin-top:1.5em;}h1:first-child{margin-top:0;padding-top:.25em;border-top:none;}h2{font-size:150%;margin-top:1.5em;border-top:4px solid #e0e0e0;padding-top:.5em;}h3{margin-top:1em;}hr{border:1px solid #ddd;}ul{margin:1em 0 1em 2em;}ol{margin:1em 0 1em 2em;}ul li,ol li{margin-top:.5em;margin-bottom:.5em;}ul ul,ul ol,ol ol,ol ul{margin-top:0;margin-bottom:0;}blockquote{margin:1em 0;border-left:5px solid #ddd;padding-left:.6em;color:#555;}dt{font-weight:bold;margin-left:1em;}dd{margin-left:2em;margin-bottom:1em;}@media screen and (min-width: 768px) {    body {        width: 748px;        margin:10px auto;    }}</style><style id="custom" type="text/css"></style></head>
+<body marginheight="0"><h1>elk使用</h1>
+<p>主要是两个方面的使用，一个是Logstash使用，一个是页面的查看。
+logstash的功能比较强大，配置方法比较复杂，下面以例子来解释。
+
+</p>
+<h1>实验环境</h1>
+<p>server：192.168.254.137
+node1: 192.168.254.135
+
+
+
+</p>
+<h1>实例：查询某台机器error数量及分布时间</h1>
+<h2>配置filbeat</h2>
+<p>指定被分析的日志
+
+</p>
+<blockquote>
+<p>   下面是在node1节点上配置：
+
+</p>
+</blockquote>
+<pre><code>vim /etc/filebeat/filebeat.yml</code></pre>
+<pre><code>...
+
+- input_type: log
+
+  # Paths that should be crawled and fetched. Glob based paths.
+  paths:
+    - /data/log/java/*.log
+...</code></pre>
+<blockquote>
+<p>   下面是在server上配置
+
+</p>
+</blockquote>
+<h2>配置logstash</h2>
+<h4>定义正则</h4>
+<pre><code>mkdir /data/patterns
+
+cd  /data/patterns    
+
+vim java</code></pre>
+<blockquote>
+<p>   添加下面这一句话
+</p>
+<pre><code>JERROR ERROR</code></pre>
+<h3>修改配置文件</h3>
+</blockquote>
+<pre><code>vim /etc/logstash/conf.d/logstash.conf</code></pre>
+<pre><code>input {
+    beats {
+        port =&gt; "5044"
+    }
+}
+ filter {
+    grok {
+        patterns_dir =&gt; "/data/patterns"
+        match =&gt; [ "message","%{JERROR:j_error}"]
+    }
+}
+output {
+    elasticsearch {
+        hosts =&gt; [ "192.168.254,137:9200" ]
+    }
+}</code></pre>
+<p>注释:“message”是系统定义的关键字，里面包含日志文件一行的所有内容。patterms_dir是指定正则规定的地方，"%{JERROR:j_error}"截取正则，并将其重新赋值为j_error.
+
+</p>
+<p>详情看备注。
+
+</p>
+<h3>重启服务</h3>
+<pre><code>systemctl  restart logstash
+systemctl  restart filebeat</code></pre>
+<h2>查看</h2>
+<blockquote>
+<p>   <a href="http://192.168.254.137:5601">http://192.168.254.137:5601</a>
+
+</p>
+</blockquote>
+<p><img src="image/analysis_log_3.jpg" alt="test_image">
+
+</p>
+<blockquote>
+<p>点击我们新加的关键字j_error
+
+</p>
+</blockquote>
+<p><img src="image/analysis_log_4.jpg" alt="test_image">
+
+</p>
+<p>可以看到ERROR的大致情况
+
+</p>
+<blockquote>
+<p>再看看具体的情况及分布时间
+
+</p>
+</blockquote>
+<p>再最上面的输入栏中输入j_error:ERROR
+
+</p>
+<p><img src="image/analysis_log_5.jpg" alt="test_image">
+
+
+</p>
+<blockquote>
+<p>   查看node1服务器上面的ERROR数量
+
+</p>
+</blockquote>
+<p>点击node1节点
+
+</p>
+<p><img src="image/analysis_log_6.jpg" alt="test_image">
+
+</p>
+<p>查看数据分布
+
+</p>
+<p><img src="image/analysis_log_7.jpg" alt="test_image">
+
+
+</p>
+<p>大体上的情况就已经知道了。
+
+
+
+
+
+
+
+</p>
+<h1>备注</h1>
+<h2>Logstash的使用</h2>
+<pre><code>   Logstash配置    
+
+   vim /etc/logstash/conf.d/logstash.conf</code></pre>
+<pre>input {
+    beats {
+        port =&gt; "5043"
+    }
+}
+ filter {
+    grok {
+        match =&gt; { "message" =&gt; "%{COMBINEDAPACHELOG}"}
+    }
+    geoip {
+        source =&gt; "192.168.254.131"
+    }
+}
+output {
+    elasticsearch {
+        hosts =&gt; [ "192.168.254.130:9200" ]
+    }
+}
+</pre>
+
+<p>注释：
+-    input:    输入方式有多种，我们一般用的是这两种：一种是安装beats插件，如上。还有一种是按照文件读取
+
+</p>
+<pre>input {
+    file {
+        path =&gt; "/data/tomcat/logs/*.log"
+        start_position =&gt; "beginning"
+    }
+}
+</pre>
+
+<ul>
+<li><p>filter:将日志数据进行整理过滤，里面有好多关键字：</p>
+</li>
+<li><p>grok：
+目前是logstash中把非标准化的日志数据转换成标准化并且可搜索数据最好的方式。Logstash默认提供了能分析包括java堆栈日志、apache日志在内的120种形式。<a href="https://github.com/logstash-plugins/logstash-patterns-core/tree/master/patterns">更多格式</a></p>
+</li>
+</ul>
+<p>如没有特别的需求的话，使用默认的apache日志形式就能达到想要的效果，如下。
+
+</p>
+<pre>grok{       
+    match =&gt; {"message" =&gt; ["%{COMBINEDAPACHELOG}"]}        
+}
+</pre>
+
+<p>但如果想要监控更多的信息，比如url上的参数，那么默认的表达式将没办法满足我们的需求，这时我们就需要自己动手去编写一些符合我们业务需要的表达式，并告诉logstash以某种期望的方式进行数据转换。
+
+</p>
+<p>首先，在logstash的根目录下创建一个patterns文件夹，这个文件夹默认是没有的。
+
+</p>
+<p>其次，在patterns文件夹中创建文件test_pattern（这里为了方便所以没有按照pattern的功能对文件进行命名，在实际应用中最好按照功能来对文件命名）。在test_pattern文件中可以按照“名称 正则表达式”这样的格式自定义一些正则表达式，以便在grok中进行使用。
+
+</p>
+<p>最后，在使用的时候一定要把pattern_dir这个参数带上，否则logstash无法识别你自定义的这些正则表达
+
+</p>
+<pre>grok {
+    patterns_dir =&gt; ["/home/keepgostudio/download/logstash-5.2.0/patterns"]
+    match =&gt; {
+        "message" =&gt; ["%{PARAMS_APACHELOG}", "%{NO_PARAMS_APACHELOG}"]
+    }
+    remove_field =&gt; ["host", "timestamp", "httpversion", "@version"]
+}
+</pre>
+
+<ol>
+<li>kv：</li>
+</ol>
+<p>将数据源转换成键值对，并创建相对的field。比如传入“a=111&amp;b=2222&amp;c=3333”，输出的时候，a，b，c会被创建成三个field，这样做的好处是，当需要查询某一个参数的时候可直接查询，而不是把一个字符串搜索出来再做解析。
+
+</p>
+<pre>kv {
+    source =&gt; "field_name"
+    field_split =&gt; "&amp;?"
+}
+</pre>
+
+<ol>
+<li>geoip:</li>
+</ol>
+<p>这个从字面上就能看出他的功能，根据ip查出相应的地理信息，比如城市，省份，国家，经纬度等。这个ip信息是在logstash中的一个数据源中进行搜索查找，而不是进行网络搜索。
+
+</p>
+<pre>geoip {
+    source =&gt; "field_name"
+    fields =&gt; ["country_name", "region_name", "city_name", "latitude", "longitude"]
+    target =&gt; "location"
+}
+</pre>
+
+<ol>
+<li>drop:</li>
+</ol>
+<p>drop可以跳过某些不想统计的日志信息，当某条日志信息符合if规则时，该条信息则不会在out中出现，logstash将直接进行下一条日志的解析。
+
+</p>
+<pre>
+if [field_name] == "value" {
+    drop {}
+}
+
+</pre>
+
+<ul>
+<li>output:</li>
+</ul>
+<p>logstash输出到elasticsearch的ip及端口
+
+
+
+</p>
+<blockquote>
+<p>  关于ELK Stack的一些查询语句: 
+
+</p>
+</blockquote>
+<p>在日志服务器上面执行
+
+</p>
+<p>①查询filebeat
+
+</p>
+<pre><code>curl -XGET 'http://localhost:9200/filebeat-*/_search?pretty'</code></pre>
+<p>②查询packetbeat
+
+</p>
+<pre><code>curl -XGET 'http://localhost:9200/packetbeat-*/_search?pretty'</code></pre>
+<p>③查询metricbeat
+
+</p>
+<pre><code>curl -XGET 'http://localhost:9200/metricbeat-*/_search?pretty'</code></pre>
+<p>④查询集群健康度
+
+</p>
+<pre><code>curl 'localhost:9200/_cat/health?v'</code></pre>
+<p>⑤查看节点列表
+
+</p>
+<pre><code>curl 'localhost:9200/_cat/nodes?v'</code></pre>
+<p>⑥列出所有索引
+
+</p>
+<pre><code>curl 'localhost:9200/_cat/indices?v'</code></pre>
+</body></html>
